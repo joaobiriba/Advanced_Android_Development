@@ -1,4 +1,4 @@
-package com.laquysoft.wear;
+package com.example.android.sunshine.app;
 
 import android.graphics.Color;
 import android.net.Uri;
@@ -49,6 +49,8 @@ public final class SunshineWatchFaceUtil {
      * The path for the {@link DataItem} containing {@link SunshineWatchFaceUtil} configuration.
      */
     public static final String PATH_WITH_FEATURE = "/watch_face_config/Digital";
+
+    public static final String PATH_WEATHER_DATA = "/weatherdata";
 
     /**
      * Name of the default interactive mode background color and the ambient mode background color.

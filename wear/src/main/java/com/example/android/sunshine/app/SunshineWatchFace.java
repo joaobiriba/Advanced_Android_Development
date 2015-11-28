@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.laquysoft.wear;
+package com.example.android.sunshine.app;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -64,6 +64,13 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
      */
     private static final int MSG_UPDATE_TIME = 0;
     private static final String LOG_TAG = SunshineWatchFace.class.getSimpleName();
+
+
+
+    private static final String KEY_CONDITION = "WEATHER_CONDITION";
+    private static final String KEY_TEMP_MIN = "WEATHER_TEMP_MIN";
+    private static final String KEY_TEMP_MAX = "WEATHER_TEMP_MAX";
+    private static final String KEY_TEMP_UNIT = "WEATHER_TEMP_UNIT";
 
     @Override
     public Engine onCreateEngine() {
@@ -120,6 +127,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
          * disable anti-aliasing in ambient mode.
          */
         boolean mLowBitAmbient;
+        private double mTempMax;
 
         @Override
         public void onCreate(SurfaceHolder holder) {
@@ -234,6 +242,8 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                 float secX = (float) Math.sin(secRot) * secLength;
                 float secY = (float) -Math.cos(secRot) * secLength;
                 canvas.drawLine(centerX, centerY, centerX + secX, centerY + secY, mHandPaint);
+
+                canvas.drawText(Double.toString(mTempMax),centerX, centerY, mHandPaint);
             }
 
             float minX = (float) Math.sin(minRot) * minLength;
@@ -250,6 +260,8 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             super.onVisibilityChanged(visible);
 
             if (visible) {
+                mGoogleApiClient.connect();
+
                 registerReceiver();
 
                 // Update time zone in case it changed while we weren't visible.
@@ -257,6 +269,11 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                 mTime.setToNow();
             } else {
                 unregisterReceiver();
+
+                if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
+                    Wearable.DataApi.removeListener(mGoogleApiClient, this);
+                    mGoogleApiClient.disconnect();
+                }
             }
 
             // Whether the timer should be running depends on whether we're visible (as well as
@@ -315,6 +332,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
 
         @Override
         public void onDataChanged(DataEventBuffer dataEventBuffer) {
+            Log.d(LOG_TAG, "onDataChanged: ");
             for (DataEvent dataEvent : dataEventBuffer) {
                 if (dataEvent.getType() != DataEvent.TYPE_CHANGED) {
                     continue;
@@ -322,7 +340,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
 
                 DataItem dataItem = dataEvent.getDataItem();
                 if (!dataItem.getUri().getPath().equals(
-                        SunshineWatchFaceUtil.PATH_WITH_FEATURE)) {
+                        SunshineWatchFaceUtil.PATH_WEATHER_DATA)) {
                     continue;
                 }
 
@@ -336,35 +354,20 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         }
 
 
-        private void updateUiForWeatherDataMap(final DataMap config) {
-            boolean uiUpdated = false;
-            for (String configKey : config.keySet()) {
-                if (!config.containsKey(configKey)) {
-                    continue;
-                }
-                int color = config.getInt(configKey);
-                if (Log.isLoggable(LOG_TAG, Log.DEBUG)) {
-                    Log.d(LOG_TAG, "Found watch face config key: " + configKey + " -> "
-                            + Integer.toHexString(color));
-                }
-                if (updateUiForKey(configKey, color)) {
-                    uiUpdated = true;
-                }
-            }
-            if (uiUpdated) {
-                invalidate();
-            }
+        private void updateUiForWeatherDataMap(final DataMap dm) {
+            int conditionId = dm.getInt(KEY_CONDITION);
+            double tempMin = dm.getDouble(KEY_TEMP_MIN);
+            double tempMax = dm.getDouble(KEY_TEMP_MAX);
+            String unitValue = dm.getString(KEY_TEMP_UNIT);
+            mTempMax = tempMax;
+            Log.d(LOG_TAG, "updateUiForWeatherDataMap: " + conditionId + " " +
+                    tempMin + " " +
+                    tempMax + " " +
+                    unitValue);
+            invalidate();
+
         }
 
-        /**
-         * Updates the color of a UI item according to the given {@code configKey}. Does nothing if
-         * {@code configKey} isn't recognized.
-         *
-         * @return whether UI has been updated
-         */
-        private boolean updateUiForKey(String configKey, int color) {
-            return true;
-        }
 
         @Override  // GoogleApiClient.ConnectionCallbacks
         public void onConnected(Bundle connectionHint) {
