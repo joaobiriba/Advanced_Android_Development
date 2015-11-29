@@ -66,7 +66,6 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
     private static final String LOG_TAG = SunshineWatchFace.class.getSimpleName();
 
 
-
     private static final String KEY_CONDITION = "WEATHER_CONDITION";
     private static final String KEY_TEMP_MIN = "WEATHER_TEMP_MIN";
     private static final String KEY_TEMP_MAX = "WEATHER_TEMP_MAX";
@@ -128,6 +127,9 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
          */
         boolean mLowBitAmbient;
         private double mTempMax;
+        private double mTempMin;
+        private int mWeather;
+
 
         @Override
         public void onCreate(SurfaceHolder holder) {
@@ -215,11 +217,19 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
             mTime.setToNow();
+            Resources resources = SunshineWatchFace.this.getResources();
 
             // Draw the background.
             if (isInAmbientMode()) {
                 canvas.drawColor(Color.BLACK);
             } else {
+                if (mWeather == 800) {
+                    mBackgroundPaint.setColor(resources.getColor(R.color.sun));
+                } else {
+                    mBackgroundPaint.setColor(resources.getColor(R.color.background));
+                }
+
+
                 canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), mBackgroundPaint);
             }
 
@@ -243,7 +253,9 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                 float secY = (float) -Math.cos(secRot) * secLength;
                 canvas.drawLine(centerX, centerY, centerX + secX, centerY + secY, mHandPaint);
 
-                canvas.drawText(Double.toString(mTempMax),centerX, centerY, mHandPaint);
+                canvas.drawText(Double.toString(mTempMax), centerX, centerY, mHandPaint);
+                canvas.drawText(Double.toString(mTempMin), centerX + 40, centerY, mHandPaint);
+                canvas.drawText(Integer.toString(mWeather), centerX + 80, centerY, mHandPaint);
             }
 
             float minX = (float) Math.sin(minRot) * minLength;
@@ -332,7 +344,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
 
         @Override
         public void onDataChanged(DataEventBuffer dataEventBuffer) {
-            Log.d(LOG_TAG, "onDataChanged: ");
+            Log.d(LOG_TAG, "onDataChanged:  ");
             for (DataEvent dataEvent : dataEventBuffer) {
                 if (dataEvent.getType() != DataEvent.TYPE_CHANGED) {
                     continue;
@@ -360,6 +372,8 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             double tempMax = dm.getDouble(KEY_TEMP_MAX);
             String unitValue = dm.getString(KEY_TEMP_UNIT);
             mTempMax = tempMax;
+            mTempMin = tempMin;
+            mWeather = conditionId;
             Log.d(LOG_TAG, "updateUiForWeatherDataMap: " + conditionId + " " +
                     tempMin + " " +
                     tempMax + " " +
