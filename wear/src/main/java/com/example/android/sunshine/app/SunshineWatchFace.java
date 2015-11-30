@@ -21,10 +21,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.content.res.TypedArray;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -32,6 +36,7 @@ import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.Time;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.SurfaceHolder;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -70,6 +75,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
     private static final String KEY_TEMP_MIN = "WEATHER_TEMP_MIN";
     private static final String KEY_TEMP_MAX = "WEATHER_TEMP_MAX";
     private static final String KEY_TEMP_UNIT = "WEATHER_TEMP_UNIT";
+
 
     @Override
     public Engine onCreateEngine() {
@@ -113,6 +119,21 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         };
         int mTapCount;
 
+        private final Resources mResources = getResources();
+
+
+        private long mTimeMotionStart = -1;
+        private long mTimeElapsed;
+        private int mLoop;
+        private Bitmap[] mCloudBitmaps;
+        private int[] mCloudSpeeds;
+        private int[] mCloudDegrees;
+        private Paint[] mCloudFilterPaints;
+        private Bitmap[] mRainBitmaps;
+        private int[] mRainSpeeds;
+        private int[] mRainDegrees;
+        private Paint[] mRainFilterPaints;
+        private float mRadius;
 
         GoogleApiClient mGoogleApiClient = new GoogleApiClient.Builder(SunshineWatchFace.this)
                 .addConnectionCallbacks(this)
@@ -154,6 +175,33 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             mHandPaint.setStrokeCap(Paint.Cap.ROUND);
 
             mTime = new Time();
+
+            // Initialing cloud bitmaps and settings
+            mCloudDegrees = mResources.getIntArray(R.array.cloudDegrees);
+            mCloudBitmaps = loadBitmaps(R.array.cloudIds);
+            mCloudSpeeds = mResources.getIntArray(R.array.cloudSpeed);
+            mCloudFilterPaints = new Paint[mCloudBitmaps.length];
+
+            // Initialing rain bitmaps and settings
+            mRainDegrees = mResources.getIntArray(R.array.rainDegrees);
+            mRainBitmaps = loadBitmaps(R.array.rainIds);
+            mRainSpeeds = mResources.getIntArray(R.array.rainSpeed);
+            mRainFilterPaints = new Paint[mRainBitmaps.length];
+
+            // We need different paints because the alpha applied is different for different clouds
+            for (int i = 0; i < mCloudBitmaps.length; i++) {
+                Paint paint = new Paint();
+                paint.setFilterBitmap(true);
+                mCloudFilterPaints[i] = paint;
+            }
+
+            // We need different paints because the alpha applied is different for different clouds
+            for (int i = 0; i < mRainBitmaps.length; i++) {
+                Paint paint = new Paint();
+                paint.setFilterBitmap(true);
+                mRainFilterPaints[i] = paint;
+            }
+
         }
 
         @Override
@@ -177,6 +225,10 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         @Override
         public void onAmbientModeChanged(boolean inAmbientMode) {
             super.onAmbientModeChanged(inAmbientMode);
+            if (!inAmbientMode) {
+                // Watch has just been set to active mode.
+                mTimeMotionStart = System.currentTimeMillis();
+            }
             if (mAmbient != inAmbientMode) {
                 mAmbient = inAmbientMode;
                 if (mLowBitAmbient) {
@@ -219,6 +271,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             mTime.setToNow();
             Resources resources = SunshineWatchFace.this.getResources();
 
+
             // Draw the background.
             if (isInAmbientMode()) {
                 canvas.drawColor(Color.BLACK);
@@ -248,13 +301,20 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             float minLength = centerX - 40;
             float hrLength = centerX - 80;
 
+
+            if (!mAmbient) {
+                // Draw animation layer (above the background, below the figure and arms.)
+                drawAnimationLayer(canvas, centerX, centerY);
+            }
+
+
             if (!mAmbient) {
                 float secX = (float) Math.sin(secRot) * secLength;
                 float secY = (float) -Math.cos(secRot) * secLength;
                 canvas.drawLine(centerX, centerY, centerX + secX, centerY + secY, mHandPaint);
 
-                canvas.drawText(Double.toString(mTempMax), centerX, centerY, mHandPaint);
-                canvas.drawText(Double.toString(mTempMin), centerX + 40, centerY, mHandPaint);
+                canvas.drawText("Max " + Double.toString(mTempMax), centerX - 50, centerY + 80, mHandPaint);
+                canvas.drawText("Min " + Double.toString(mTempMin), centerX + 50, centerY + 80, mHandPaint);
                 canvas.drawText(Integer.toString(mWeather), centerX + 80, centerY, mHandPaint);
             }
 
@@ -404,6 +464,91 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             if (Log.isLoggable(LOG_TAG, Log.DEBUG)) {
                 Log.d(LOG_TAG, "onConnectionFailed: " + result);
             }
+        }
+
+        /**
+         * Drawing the animated weather
+         *
+         * @param canvas  Canvas to be drawn on
+         * @param centerX Center of the display
+         * @param centerY Center of the display
+         */
+        private void drawAnimationLayer(Canvas canvas, float centerX, float centerY) {
+            if (mAmbient) {
+                // Do nothing - static background in ambient mode
+                mTimeMotionStart = -1;
+            } else {
+
+                if (mTimeMotionStart < 0) {
+                    mTimeMotionStart = System.currentTimeMillis();
+                }
+
+                mTimeElapsed = System.currentTimeMillis() - mTimeMotionStart;
+
+                if (mWeather < 500) {
+                    for (mLoop = 0; mLoop < mCloudBitmaps.length; mLoop++) {
+                        canvas.save();
+                        canvas.rotate(mCloudDegrees[mLoop], centerX, centerY);
+
+                        mRadius = centerX - (mTimeElapsed / (mCloudSpeeds[mLoop])) % centerX;
+                        mCloudFilterPaints[mLoop].setAlpha((int) (mRadius / centerX * 255));
+
+                        canvas.drawBitmap(mCloudBitmaps[mLoop], centerX, centerY - mRadius,
+                                mCloudFilterPaints[mLoop]);
+
+                        canvas.restore();
+                    }
+                } else {
+                    for (mLoop = 0; mLoop < mRainBitmaps.length; mLoop++) {
+                        canvas.save();
+                        //canvas.rotate(mRainDegrees[mLoop], centerX, centerY);
+                        canvas.translate(mRainDegrees[mLoop], 0);
+
+                        mRadius = centerX - (mTimeElapsed / (mRainSpeeds[mLoop])) % centerX;
+                        mRainFilterPaints[mLoop].setAlpha((int) (mRadius / centerX * 255));
+
+                        canvas.drawBitmap(mRainBitmaps[mLoop], centerX, centerY - mRadius,
+                                mRainFilterPaints[mLoop]);
+
+                        canvas.restore();
+                    }
+                }
+            }
+        }
+
+        /**
+         * Loading an int array from resource file
+         *
+         * @param resId ResourceId of the integer array
+         * @return int array
+         */
+        private int[] getIntArray(int resId) {
+            TypedArray array = mResources.obtainTypedArray(resId);
+            int[] rc = new int[array.length()];
+            TypedValue value = new TypedValue();
+            for (int i = 0; i < array.length(); i++) {
+                array.getValue(i, value);
+                rc[i] = value.resourceId;
+            }
+            return rc;
+        }
+
+        /**
+         * Loading all versions (interactive, ambient and low bit) into a bitmap array. The correct
+         * version will be pluck out at runtime.
+         *
+         * @param arrayId Key to the type of bitmap that we are initialising. The full list can be
+         *                found in res/values/images_santa_watchface.xml
+         * @return Array of three bitmaps for interactive, ambient and low bit modes
+         */
+        private Bitmap[] loadBitmaps(int arrayId) {
+            int[] bitmapIds = getIntArray(arrayId);
+            Bitmap[] bitmaps = new Bitmap[bitmapIds.length];
+            for (int i = 0; i < bitmapIds.length; i++) {
+                Drawable backgroundDrawable = mResources.getDrawable(bitmapIds[i]);
+                bitmaps[i] = ((BitmapDrawable) backgroundDrawable).getBitmap();
+            }
+            return bitmaps;
         }
     }
 }

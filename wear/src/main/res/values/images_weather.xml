@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+
+    <array name="cloudIds">
+        <item>@drawable/cloud1</item>
+        <item>@drawable/cloud7</item>
+        <item>@drawable/cloud6</item>
+        <item>@drawable/cloud5</item>
+        <item>@drawable/cloud4</item>
+        <item>@drawable/cloud3</item>
+        <item>@drawable/cloud2</item>
+    </array>
+
+
+    <array name="rainIds">
+        <item>@drawable/droplet</item>
+        <item>@drawable/droplet</item>
+        <item>@drawable/droplet</item>
+        <item>@drawable/droplet</item>
+        <item>@drawable/droplet</item>
+        <item>@drawable/droplet</item>
+        <item>@drawable/droplet</item>
+    </array>
+
+    <integer-array name="cloudDegrees">
+        <item>330</item>
+        <item>285</item>
+        <item>250</item>
+        <item>168</item>
+        <item>105</item>
+        <item>70</item>
+        <item>37</item>
+    </integer-array>
+
+    <integer-array name="rainDegrees">
+        <item>-330</item>
+        <item>-285</item>
+        <item>250</item>
+        <item>-168</item>
+        <item>105</item>
+        <item>-70</item>
+        <item>37</item>
+    </integer-array>
+
+    <integer-array name="cloudSpeed">
+        <item>100</item>
+        <item>85</item>
+        <item>95</item>
+        <item>80</item>
+        <item>100</item>
+        <item>75</item>
+        <item>90</item>
+    </integer-array>
+
+    <integer-array name="rainSpeed">
+        <item>100</item>
+        <item>85</item>
+        <item>95</item>
+        <item>80</item>
+        <item>100</item>
+        <item>75</item>
+        <item>90</item>
+    </integer-array>
+
+    <integer-array name="cloudInitialStartingPercentage">
+        <item>100</item>
+        <item>95</item>
+        <item>150</item>
+        <item>95</item>
+        <item>130</item>
+        <item>100</item>
+        <item>120</item>
+    </integer-array>
+
+    <integer-array name="rainInitialStartingPercentage">
+        <item>100</item>
+        <item>95</item>
+        <item>150</item>
+        <item>95</item>
+        <item>130</item>
+        <item>100</item>
+        <item>120</item>
+    </integer-array>
+</resources>
