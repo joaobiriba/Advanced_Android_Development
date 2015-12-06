@@ -317,8 +317,10 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                 float secY = (float) -Math.cos(secRot) * secLength;
                 canvas.drawLine(centerX, centerY, centerX + secX, centerY + secY, mHandPaint);
 
-                canvas.drawText("Max " + Double.toString(mTempMax), centerX - 50, centerY + 80, mHandPaint);
-                canvas.drawText("Min " + Double.toString(mTempMin), centerX + 50, centerY + 80, mHandPaint);
+                String tMin = String.format(getResources().getString(R.string.format_temperature), mTempMax);
+                String tMax = String.format(getResources().getString(R.string.format_temperature), mTempMin);
+                canvas.drawText("T Max " + tMax, centerX - 50, centerY + 80, mHandPaint);
+                canvas.drawText("T Min " + tMin, centerX + 50, centerY + 80, mHandPaint);
                 canvas.drawText(Integer.toString(mWeather), centerX + 80, centerY, mHandPaint);
             }
 
