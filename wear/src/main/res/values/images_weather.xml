@@ -23,6 +23,18 @@
         <item>@drawable/droplet</item>
     </array>
 
+
+
+    <array name="snowIds">
+        <item>@drawable/snow</item>
+        <item>@drawable/snow</item>
+        <item>@drawable/snow</item>
+        <item>@drawable/snow</item>
+        <item>@drawable/snow</item>
+        <item>@drawable/snow</item>
+        <item>@drawable/snow</item>
+    </array>
+
     <integer-array name="cloudDegrees">
         <item>330</item>
         <item>285</item>
@@ -34,6 +46,16 @@
     </integer-array>
 
     <integer-array name="rainDegrees">
+        <item>-330</item>
+        <item>-285</item>
+        <item>250</item>
+        <item>-168</item>
+        <item>105</item>
+        <item>-70</item>
+        <item>37</item>
+    </integer-array>
+
+    <integer-array name="snowDegrees">
         <item>-330</item>
         <item>-285</item>
         <item>250</item>
@@ -63,6 +85,16 @@
         <item>90</item>
     </integer-array>
 
+    <integer-array name="snowSpeed">
+        <item>100</item>
+        <item>85</item>
+        <item>95</item>
+        <item>80</item>
+        <item>100</item>
+        <item>75</item>
+        <item>90</item>
+    </integer-array>
+
     <integer-array name="cloudInitialStartingPercentage">
         <item>100</item>
         <item>95</item>
@@ -74,6 +106,16 @@
     </integer-array>
 
     <integer-array name="rainInitialStartingPercentage">
+        <item>100</item>
+        <item>95</item>
+        <item>150</item>
+        <item>95</item>
+        <item>130</item>
+        <item>100</item>
+        <item>120</item>
+    </integer-array>
+
+    <integer-array name="snowInitialStartingPercentage">
         <item>100</item>
         <item>95</item>
         <item>150</item>

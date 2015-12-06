@@ -133,6 +133,10 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
         private int[] mRainSpeeds;
         private int[] mRainDegrees;
         private Paint[] mRainFilterPaints;
+        private Bitmap[] mSnowBitmaps;
+        private int[] mSnowSpeeds;
+        private int[] mSnowDegrees;
+        private Paint[] mSnowFilterPaints;
         private float mRadius;
 
         GoogleApiClient mGoogleApiClient = new GoogleApiClient.Builder(SunshineWatchFace.this)
@@ -484,35 +488,7 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                 }
 
                 mTimeElapsed = System.currentTimeMillis() - mTimeMotionStart;
-
-                if (mWeather < 500) {
-                    for (mLoop = 0; mLoop < mCloudBitmaps.length; mLoop++) {
-                        canvas.save();
-                        canvas.rotate(mCloudDegrees[mLoop], centerX, centerY);
-
-                        mRadius = centerX - (mTimeElapsed / (mCloudSpeeds[mLoop])) % centerX;
-                        mCloudFilterPaints[mLoop].setAlpha((int) (mRadius / centerX * 255));
-
-                        canvas.drawBitmap(mCloudBitmaps[mLoop], centerX, centerY - mRadius,
-                                mCloudFilterPaints[mLoop]);
-
-                        canvas.restore();
-                    }
-                } else {
-                    for (mLoop = 0; mLoop < mRainBitmaps.length; mLoop++) {
-                        canvas.save();
-                        //canvas.rotate(mRainDegrees[mLoop], centerX, centerY);
-                        canvas.translate(mRainDegrees[mLoop], 0);
-
-                        mRadius = centerX - (mTimeElapsed / (mRainSpeeds[mLoop])) % centerX;
-                        mRainFilterPaints[mLoop].setAlpha((int) (mRadius / centerX * 255));
-
-                        canvas.drawBitmap(mRainBitmaps[mLoop], centerX, centerY - mRadius,
-                                mRainFilterPaints[mLoop]);
-
-                        canvas.restore();
-                    }
-                }
+                animateBackgroundForWeatherCondition(mWeather, canvas, centerX, centerY);
             }
         }
 
@@ -549,6 +525,94 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
                 bitmaps[i] = ((BitmapDrawable) backgroundDrawable).getBitmap();
             }
             return bitmaps;
+        }
+
+        public void animateBackgroundForWeatherCondition(int weatherId, Canvas canvas, float centerX, float centerY) {
+            // Based on weather code data found at:
+            // http://bugs.openweathermap.org/projects/api/wiki/Weather_Condition_Codes
+            if (weatherId >= 200 && weatherId <= 232) {
+                animateRain(canvas, centerX, centerY, 1); //storm
+            } else if (weatherId >= 300 && weatherId <= 321) {
+                animateRain(canvas, centerX, centerY, 0.2); //light_rain
+            } else if (weatherId >= 500 && weatherId <= 504) {
+                animateRain(canvas, centerX, centerY, 0.5); //rain
+            } else if (weatherId == 511) {
+                animateSnow(canvas, centerX, centerY, 0.5); //snow
+            } else if (weatherId >= 520 && weatherId <= 531) {
+                animateRain(canvas, centerX, centerY, 0.5); //rain
+            } else if (weatherId >= 600 && weatherId <= 622) {
+                animateSnow(canvas, centerX, centerY, 1); //snow
+            } else if (weatherId >= 701 && weatherId <= 761) {
+                animateFog(canvas, centerX, centerY);
+            } else if (weatherId == 761 || weatherId == 781) {
+                animateRain(canvas, centerX, centerY, 1); //storm
+            } else if (weatherId == 800) {
+                animateRain(canvas, centerX, centerY, 0); //clear
+            } else if (weatherId == 801) {
+                animateClouds(canvas, centerX, centerY, 0.5); //light clouds
+            } else if (weatherId >= 802 && weatherId <= 804) {
+                animateClouds(canvas, centerX, centerY, 1); //clouds
+            }
+        }
+
+        public void animateClouds(Canvas canvas, float centerX, float centerY, double intensity) {
+            for (mLoop = 0; mLoop < (mCloudBitmaps.length * intensity); mLoop++) {
+                canvas.save();
+                canvas.rotate(mCloudDegrees[mLoop], centerX, centerY);
+
+                mRadius = centerX - (mTimeElapsed / (mCloudSpeeds[mLoop])) % centerX;
+                mCloudFilterPaints[mLoop].setAlpha((int) (mRadius / centerX * 255));
+
+                canvas.drawBitmap(mCloudBitmaps[mLoop], centerX, centerY - mRadius,
+                        mCloudFilterPaints[mLoop]);
+
+                canvas.restore();
+            }
+        }
+
+        public void animateRain(Canvas canvas, float centerX, float centerY, double intensity) {
+            for (mLoop = 0; mLoop < (mRainBitmaps.length * intensity); mLoop++) {
+                canvas.save();
+                canvas.translate(mRainDegrees[mLoop], 0);
+
+                mRadius = centerX - (mTimeElapsed / (mRainSpeeds[mLoop])) % centerX;
+                mRainFilterPaints[mLoop].setAlpha((int) (mRadius / centerX * 255));
+
+                canvas.drawBitmap(mRainBitmaps[mLoop], centerX, centerY - mRadius,
+                        mRainFilterPaints[mLoop]);
+
+                canvas.restore();
+            }
+        }
+
+        public void animateSnow(Canvas canvas, float centerX, float centerY, double intensity) {
+            for (mLoop = 0; mLoop < (mSnowBitmaps.length * intensity); mLoop++) {
+                canvas.save();
+                canvas.translate(mSnowDegrees[mLoop], 0);
+
+                mRadius = centerX - (mTimeElapsed / (mSnowSpeeds[mLoop])) % centerX;
+                mSnowFilterPaints[mLoop].setAlpha((int) (mRadius / centerX * 255));
+
+                canvas.drawBitmap(mSnowBitmaps[mLoop], centerX, centerY - mRadius,
+                        mSnowFilterPaints[mLoop]);
+
+                canvas.restore();
+            }
+        }
+
+        public void animateFog(Canvas canvas, float centerX, float centerY) {
+            for (mLoop = 0; mLoop < mCloudBitmaps.length; mLoop++) {
+                canvas.save();
+                canvas.translate(mRainDegrees[0], 0);
+
+                mRadius = centerX - (mTimeElapsed / (mCloudSpeeds[mLoop])) % centerX;
+                mCloudFilterPaints[0].setAlpha((int) (mRadius / centerX * 255));
+                canvas.scale(mRadius, mRadius);
+                canvas.drawBitmap(mCloudBitmaps[0], centerX, centerY - mRadius,
+                        mCloudFilterPaints[0]);
+
+                canvas.restore();
+            }
         }
     }
 }
