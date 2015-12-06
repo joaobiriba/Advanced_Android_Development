@@ -192,6 +192,12 @@ public class SunshineWatchFace extends CanvasWatchFaceService {
             mRainSpeeds = mResources.getIntArray(R.array.rainSpeed);
             mRainFilterPaints = new Paint[mRainBitmaps.length];
 
+            // Initialing rain bitmaps and settings
+            mSnowDegrees = mResources.getIntArray(R.array.snowDegrees);
+            mSnowBitmaps = loadBitmaps(R.array.snowIds);
+            mSnowSpeeds = mResources.getIntArray(R.array.snowSpeed);
+            mSnowFilterPaints = new Paint[mSnowBitmaps.length];
+
             // We need different paints because the alpha applied is different for different clouds
             for (int i = 0; i < mCloudBitmaps.length; i++) {
                 Paint paint = new Paint();
